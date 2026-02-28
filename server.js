@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const {
     createTask,
     getTaskById,
@@ -11,6 +12,7 @@ const {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SECRET_KEY = process.env.JWT_SECRET || 'super-secret-key';
 
 app.use(express.json());
 
@@ -45,16 +47,41 @@ function simulateHeavyProcessing(taskId, text) {
     }, processingTime);
 }
 
+//POST /login
+app.post('/login', (req, res) => {
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ error: 'Username is required' });
+    }
+    const token = jwt.sign({ userId: username }, SECRET_KEY, { expiresIn: '1h' });
+    return res.json({ token });
+});
+
+// Middleware для перевірки токена
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid token.' });
+        req.user = user;
+        next();
+    });
+}
+
 //POST /tasks
-app.post('/tasks', (req, res) => {
+app.post('/tasks', authenticateToken, (req, res) => {
     const { text } = req.body;
+    const userId = req.user.userId;
 
     if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: 'Valid text is required in the body' });
     }
 
-    //створення нового завдання
-    const taskId = createTask(text);
+    //створення нового завдання з прив'язкою до користувача
+    const taskId = createTask(text, userId);
     console.log(`[Task ${taskId}] Created new task.`);
 
     //оновлення статусу на QUEUED
@@ -131,10 +158,10 @@ app.put('/tasks/:id', (req, res) => {
     console.log(`[Task ${id}] Input text updated.`);
 
     simulateHeavyProcessing(id, text);
-    
-    return res.json({ 
-        message: 'Task updated successfully', 
-        id: id 
+
+    return res.json({
+        message: 'Task updated successfully',
+        id: id
     });
 });
 
@@ -152,9 +179,9 @@ app.delete('/tasks/:id', (req, res) => {
     deleteTask(id);
     console.log(`[Task ${id}] Task deleted from database.`);
 
-    return res.json({ 
-        message: 'Task deleted successfully', 
-        id: id 
+    return res.json({
+        message: 'Task deleted successfully',
+        id: id
     });
 });
 
