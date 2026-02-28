@@ -4,7 +4,9 @@ const {
     getTaskById,
     updateTaskStatus,
     saveTaskResult,
-    getAllTasks
+    getAllTasks,
+    updateTaskText,
+    deleteTask
 } = require('./db');
 
 const app = express();
@@ -106,6 +108,54 @@ app.get('/tasks', (req, res) => {
     });
 
     return res.json(formattedTasks);
+});
+
+// PUT /tasks/:id
+app.put('/tasks/:id', (req, res) => {
+    const { id } = req.params;
+    const { text } = req.body;
+
+    if (!text || typeof text !== 'string') {
+        return res.status(400).json({ error: 'Valid text is required to update the task' });
+    }
+
+    //перевірка чи існує
+    const task = getTaskById(id);
+    if (!task) {
+        console.log(`[Task ${id}] Update failed: Task not found.`);
+        return res.status(404).json({ error: 'Task not found' });
+    }
+
+    //оновлення тексту
+    updateTaskText(id, text);
+    console.log(`[Task ${id}] Input text updated.`);
+
+    simulateHeavyProcessing(id, text);
+    
+    return res.json({ 
+        message: 'Task updated successfully', 
+        id: id 
+    });
+});
+
+app.delete('/tasks/:id', (req, res) => {
+    const { id } = req.params;
+
+    //перевірка чи існує
+    const task = getTaskById(id);
+    if (!task) {
+        console.log(`[Task ${id}] Delete failed: Task not found.`);
+        return res.status(404).json({ error: 'Task not found' });
+    }
+
+    //видалення
+    deleteTask(id);
+    console.log(`[Task ${id}] Task deleted from database.`);
+
+    return res.json({ 
+        message: 'Task deleted successfully', 
+        id: id 
+    });
 });
 
 app.listen(PORT, () => {

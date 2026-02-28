@@ -1,49 +1,72 @@
 //заглушка без БД
 //todo: підключи sqlite і зроби запити
-
+const Database = require('better-sqlite3')
 const { v4: uuidv4 } = require('uuid');
+const db = new Database('tasks.db')
 
-const mockDatabase = new Map();
+db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+        id TEXT PRIMARY KEY,
+        status TEXT NOT NULL,
+        input_text TEXT,
+        result_data TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    )
+`);
 
+//CREATE
 function createTask(inputText) {
     const id = uuidv4();
-    const newTask = {
-        id,
-        status: 'CREATED',
-        input_text: inputText,
-        result_data: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-    };
-    mockDatabase.set(id, newTask);
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+        INSERT INTO tasks (id, status, input_text, result_data, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(id,'CREATED',inputText,null,now,now)
     return id;
 }
 
+//READ(ОДНУ)
 function getTaskById(id) {
-    return mockDatabase.get(id) || null;
+    const stmt = db.prepare('SELECT * FROM tasks WHERE id = ?');
+    return stmt.get(id) || null;
 }
 
-function updateTaskStatus(id, newStatus) {
-    const task = mockDatabase.get(id);
-    if (task) {
-        task.status = newStatus;
-        task.updated_at = new Date().toISOString();
-    }
-}
-
-function saveTaskResult(id, resultData, status = 'DONE') {
-    const task = mockDatabase.get(id);
-    if (task) {
-        task.result_data = resultData;
-        task.status = status;
-        task.updated_at = new Date().toISOString();
-    }
-}
-
+//READ(ВСІ)
 function getAllTasks() {
-    return Array.from(mockDatabase.values()).sort((a, b) =>
-        new Date(b.created_at) - new Date(a.created_at)
-    );
+    const stmt = db.prepare('SELECT * FROM tasks ORDER BY created_at DESC');
+    return stmt.all();
+}
+
+//UPDATE(STATUS)
+function updateTaskStatus(id, newStatus) {
+    const now = new Date().toISOString();
+    const stmt = db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?');
+    stmt.run(newStatus, now, id);
+}
+
+//UPDATE(RESULT)
+function saveTaskResult(id, resultData, status = 'DONE') {
+    const now = new Date().toISOString();
+    const stmt = db.prepare('UPDATE tasks SET result_data = ?, status = ?, updated_at = ? WHERE id = ?');
+    stmt.run(resultData, status, now, id);
+}
+
+//UPDATE(TEXT)
+function updateTaskText(id, newText){
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+        UPDATE tasks SET input_text = ?, status = ?, result_data = ?, updated_at = ? 
+        WHERE id = ?
+    `);
+    stmt.run(newText,'QUEUED', null, now, id);
+}
+
+//DELETE
+function deleteTask(id){
+    const stmt = db.prepare('DELETE FROM tasks WHERE id = ?');
+    stmt.run(id); 
 }
 
 module.exports = {
@@ -51,5 +74,7 @@ module.exports = {
     getTaskById,
     updateTaskStatus,
     saveTaskResult,
-    getAllTasks
+    getAllTasks,
+    updateTaskText,
+    deleteTask
 };
