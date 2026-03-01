@@ -27,45 +27,45 @@ function createTask(inputText, userId) {
 }
 
 //READ(ОДНУ)
-function getTaskById(id) {
-    const stmt = db.prepare('SELECT * FROM tasks WHERE id = ?');
-    return stmt.get(id) || null;
+function getTaskById(id, userId) {
+    const stmt = db.prepare('SELECT * FROM tasks WHERE id = ? AND user_id = ?');
+    return stmt.get(id, userId) || null;
 }
 
 //READ(ВСІ)
-function getAllTasks() {
-    const stmt = db.prepare('SELECT * FROM tasks ORDER BY created_at DESC');
-    return stmt.all();
+function getAllTasks(userId) {
+    const stmt = db.prepare('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC');
+    return stmt.all(userId);
 }
 
 //UPDATE(STATUS)
-function updateTaskStatus(id, newStatus) {
+function updateTaskStatus(id, userId, newStatus) {
     const now = new Date().toISOString();
-    const stmt = db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ?');
-    stmt.run(newStatus, now, id);
+    const stmt = db.prepare('UPDATE tasks SET status = ?, updated_at = ? WHERE id = ? AND user_id = ?');
+    stmt.run(newStatus, now, id, userId);
 }
 
 //UPDATE(RESULT)
-function saveTaskResult(id, resultData, status = 'DONE') {
+function saveTaskResult(id, userId, resultData, status = 'DONE') {
     const now = new Date().toISOString();
-    const stmt = db.prepare('UPDATE tasks SET result_data = ?, status = ?, updated_at = ? WHERE id = ?');
-    stmt.run(resultData, status, now, id);
+    const stmt = db.prepare('UPDATE tasks SET result_data = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?');
+    stmt.run(resultData, status, now, id, userId);
 }
 
 //UPDATE(TEXT)
-function updateTaskText(id, newText) {
+function updateTaskText(id, userId, newText) {
     const now = new Date().toISOString();
     const stmt = db.prepare(`
         UPDATE tasks SET input_text = ?, status = ?, result_data = ?, updated_at = ? 
-        WHERE id = ?
+        WHERE id = ? AND user_id = ?
     `);
-    stmt.run(newText, 'QUEUED', null, now, id);
+    stmt.run(newText, 'QUEUED', null, now, id, userId);
 }
 
 //DELETE
-function deleteTask(id) {
-    const stmt = db.prepare('DELETE FROM tasks WHERE id = ?');
-    stmt.run(id);
+function deleteTask(id, userId) {
+    const stmt = db.prepare('DELETE FROM tasks WHERE id = ? AND user_id = ?');
+    stmt.run(id, userId);
 }
 
 module.exports = {

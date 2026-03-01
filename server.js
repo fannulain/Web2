@@ -16,9 +16,9 @@ const SECRET_KEY = process.env.JWT_SECRET || 'super-secret-key';
 
 app.use(express.json());
 
-function simulateHeavyProcessing(taskId, text) {
+function simulateHeavyProcessing(taskId, text, userId) {
     //оновлення статусу на PROCESSING
-    updateTaskStatus(taskId, 'PROCESSING');
+    updateTaskStatus(taskId, userId, 'PROCESSING');
     console.log(`[Task ${taskId}] Status changed to PROCESSING. Starting work...`);
 
     //симуляція обробки завдання
@@ -38,11 +38,11 @@ function simulateHeavyProcessing(taskId, text) {
             });
 
             //оновлення статусу на DONE
-            saveTaskResult(taskId, resultData, 'DONE');
+            saveTaskResult(taskId, userId, resultData, 'DONE');
             console.log(`[Task ${taskId}] Status changed to DONE. Result saved.`);
         } catch (e) {
             console.error(`[Task ${taskId}] Error processing task:`, e);
-            updateTaskStatus(taskId, 'ERROR');
+            updateTaskStatus(taskId, userId, 'ERROR');
         }
     }, processingTime);
 }
@@ -64,17 +64,20 @@ function authenticateToken(req, res, next) {
 
     if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
-    jwt.verify(token, SECRET_KEY, (err, user) => {
+    jwt.verify(token, SECRET_KEY, (err, decoded) => {
         if (err) return res.status(403).json({ error: 'Invalid token.' });
-        req.user = user;
+        req.userId = decoded.userId;
         next();
     });
 }
 
+//Захищаєм всі маршрути
+app.use('/tasks', authenticateToken);
+
 //POST /tasks
 app.post('/tasks', authenticateToken, (req, res) => {
     const { text } = req.body;
-    const userId = req.user.userId;
+    const userId = req.userId;
 
     if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: 'Valid text is required in the body' });
@@ -85,11 +88,11 @@ app.post('/tasks', authenticateToken, (req, res) => {
     console.log(`[Task ${taskId}] Created new task.`);
 
     //оновлення статусу на QUEUED
-    updateTaskStatus(taskId, 'QUEUED');
+    updateTaskStatus(taskId, userId, 'QUEUED');
     console.log(`[Task ${taskId}] Status changed to QUEUED.`);
 
     //симуляція обробки
-    simulateHeavyProcessing(taskId, text);
+    simulateHeavyProcessing(taskId, text, userId);
 
     //повертаємо інформацію про створене завдання
     return res.status(201).json({
@@ -101,8 +104,7 @@ app.post('/tasks', authenticateToken, (req, res) => {
 
 //GET /tasks/:id
 app.get('/tasks/:id', (req, res) => {
-    const { id } = req.params;
-    const task = getTaskById(id);
+    const task = getTaskById(req.params.id, req.userId);
 
     if (!task) {
         return res.status(404).json({ error: 'Task not found' });
@@ -122,7 +124,7 @@ app.get('/tasks/:id', (req, res) => {
 
 //GET /tasks
 app.get('/tasks', (req, res) => {
-    const tasks = getAllTasks();
+    const tasks = getAllTasks(req.userId);
 
     //форматування списку завдань
     const formattedTasks = tasks.map(task => {
@@ -141,23 +143,24 @@ app.get('/tasks', (req, res) => {
 app.put('/tasks/:id', (req, res) => {
     const { id } = req.params;
     const { text } = req.body;
+    const userId = req.userId;
 
     if (!text || typeof text !== 'string') {
         return res.status(400).json({ error: 'Valid text is required to update the task' });
     }
 
     //перевірка чи існує
-    const task = getTaskById(id);
+    const task = getTaskById(id, userId);
     if (!task) {
         console.log(`[Task ${id}] Update failed: Task not found.`);
         return res.status(404).json({ error: 'Task not found' });
     }
 
     //оновлення тексту
-    updateTaskText(id, text);
+    updateTaskText(id, userId, text);
     console.log(`[Task ${id}] Input text updated.`);
 
-    simulateHeavyProcessing(id, text);
+    simulateHeavyProcessing(id, text, userId);
 
     return res.json({
         message: 'Task updated successfully',
@@ -167,16 +170,16 @@ app.put('/tasks/:id', (req, res) => {
 
 app.delete('/tasks/:id', (req, res) => {
     const { id } = req.params;
-
+    const userId = req.userId;
     //перевірка чи існує
-    const task = getTaskById(id);
+    const task = getTaskById(id, userId);
     if (!task) {
         console.log(`[Task ${id}] Delete failed: Task not found.`);
         return res.status(404).json({ error: 'Task not found' });
     }
 
     //видалення
-    deleteTask(id);
+    deleteTask(id, userId);
     console.log(`[Task ${id}] Task deleted from database.`);
 
     return res.json({
