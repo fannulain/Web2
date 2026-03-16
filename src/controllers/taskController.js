@@ -6,9 +6,9 @@ const {
     deleteTask,
     updateTaskStatus
 } = require('../models/db');
-const { simulateHeavyProcessing } = require('../services/taskService');
+const { publishTask } = require('../services/rabbitmqService');
 
-function createNewTask(req, res) {
+async function createNewTask(req, res) {
     const { text } = req.body;
     const userId = req.userId;
 
@@ -24,8 +24,12 @@ function createNewTask(req, res) {
     updateTaskStatus(taskId, userId, 'QUEUED');
     console.log(`[Task ${taskId}] Status changed to QUEUED.`);
 
-    //симуляція обробки
-    simulateHeavyProcessing(taskId, text, userId);
+    //публікація в чергу
+    try {
+        await publishTask({ taskId, text, userId });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to queue task for processing' });
+    }
 
     //повертаємо інформацію про створене завдання
     return res.status(201).json({
@@ -70,7 +74,7 @@ function getTasks(req, res) {
     return res.json(formattedTasks);
 }
 
-function updateTask(req, res) {
+async function updateTask(req, res) {
     const { id } = req.params;
     const { text } = req.body;
     const userId = req.userId;
@@ -90,11 +94,20 @@ function updateTask(req, res) {
     updateTaskText(id, userId, text);
     console.log(`[Task ${id}] Input text updated.`);
 
-    simulateHeavyProcessing(id, text, userId);
+    //оновлення статусу на QUEUED
+    updateTaskStatus(id, userId, 'QUEUED');
+    console.log(`[Task ${id}] Status changed to QUEUED.`);
 
-    return res.json({
+    try {
+        await publishTask({ taskId: id, text, userId });
+    } catch (error) {
+        return res.status(500).json({ error: 'Failed to queue task for processing' });
+    }
+
+    return res.status(200).json({
         message: 'Task updated successfully',
-        id: id
+        id: id,
+        status: 'QUEUED'
     });
 }
 
