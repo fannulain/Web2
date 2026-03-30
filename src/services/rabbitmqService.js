@@ -65,7 +65,8 @@ async function consumeEvents() {
                 console.error(`[Event] Failed to process message`, error);
                 channel.ack(msg);
             }
-        }, { noAck: false });
+        }
+    }, { noAck: false });
 }
 
 module.exports = {
