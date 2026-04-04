@@ -7,6 +7,7 @@ const {
     updateTaskStatus
 } = require('../models/db');
 const { publishTask } = require('../services/rabbitmqService');
+const { getObjectData } = require('../services/minioService');
 
 async function createNewTask(req, res) {
     const { text } = req.body;
@@ -39,37 +40,43 @@ async function createNewTask(req, res) {
     });
 }
 
-function getTask(req, res) {
+async function getTask(req, res) {
     const task = getTaskById(req.params.id, req.userId);
 
     if (!task) {
         return res.status(404).json({ error: 'Task not found' });
     }
 
-    //парсимо стрінг в об'єкт
-    if (task.result_data) {
+    if (task.status === 'DONE' && task.s3_key) {
         try {
-            task.result_data = JSON.parse(task.result_data);
+            const data = await getObjectData(task.s3_key);
+            task.result = JSON.parse(data);
         } catch (e) {
-            //поки нічого не робимо
+            console.error(`[MinIO] Failed to fetch data for task ${task.id}:`, e);
+            task.result = null;
         }
     }
 
+    delete task.s3_key;
     return res.json(task);
 }
 
-function getTasks(req, res) {
+async function getTasks(req, res) {
     const tasks = getAllTasks(req.userId);
 
-    //форматування списку завдань
-    const formattedTasks = tasks.map(task => {
-        if (task.result_data) {
+    const formattedTasks = await Promise.all(tasks.map(async task => {
+        if (task.status === 'DONE' && task.s3_key) {
             try {
-                task.result_data = JSON.parse(task.result_data);
-            } catch (e) { }
+                const data = await getObjectData(task.s3_key);
+                task.result = JSON.parse(data);
+            } catch (e) {
+                console.error(`[MinIO] Failed to fetch data for task ${task.id}:`, e);
+                task.result = null;
+            }
         }
+        delete task.s3_key;
         return task;
-    });
+    }));
 
     return res.json(formattedTasks);
 }
