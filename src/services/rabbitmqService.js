@@ -54,8 +54,8 @@ async function consumeEvents() {
                     const progressData = JSON.stringify({ progress: progress || 'Started background processing' });
                     saveTaskResult(taskId, userId, progressData, 'PROCESSING');
                 } else if (status === 'DONE') {
-                    const finalResult = JSON.stringify(result || { message: "Task completed" });
-                    saveTaskResult(taskId, userId, finalResult, 'DONE');
+                    const s3Key = result && result.s3Key ? result.s3Key : null;
+                    saveTaskResult(taskId, userId, s3Key, 'DONE');
                 } else if (status === 'ERROR') {
                     updateTaskStatus(taskId, userId, 'ERROR');
                 }

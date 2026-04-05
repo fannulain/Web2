@@ -5,11 +5,9 @@ from textblob import TextBlob
 import sys
 import io
 from minio import Minio
-
 RABBITMQ_HOST = 'localhost'
 QUEUE_REQUEST = 'transcription.request'
 QUEUE_EVENTS = 'transcription.events'
-
 MINIO_ENDPOINT = 'localhost:9000'
 MINIO_ACCESS_KEY = 'minioadmin'
 MINIO_SECRET_KEY = 'minioadmin'
@@ -96,8 +94,7 @@ def callback(ch, method, properties, body):
         publish_event(ch, task_id, user_id, 'PROCESSING', 90)
         noun_phrases = list(set(blob.noun_phrases))[:15]
         time.sleep(1)
-        
-        result_content = {
+        result = {
             "analysis_type": "NLP & Sentiment Pipeline",
             "metrics": {
                 "word_count": word_count,

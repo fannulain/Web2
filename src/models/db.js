@@ -8,7 +8,7 @@ db.exec(`
         user_id TEXT NOT NULL,
         status TEXT NOT NULL,
         input_text TEXT,
-        result_data TEXT,
+        s3_key TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
     )
@@ -19,7 +19,7 @@ function createTask(inputText, userId) {
     const id = uuidv4();
     const now = new Date().toISOString();
     const stmt = db.prepare(`
-        INSERT INTO tasks (id, user_id, status, input_text, result_data, created_at, updated_at) 
+        INSERT INTO tasks (id, user_id, status, input_text, s3_key, created_at, updated_at) 
         VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     stmt.run(id, userId, 'CREATED', inputText, null, now, now)
@@ -46,17 +46,17 @@ function updateTaskStatus(id, userId, newStatus) {
 }
 
 //UPDATE(RESULT)
-function saveTaskResult(id, userId, resultData, status = 'DONE') {
+function saveTaskResult(id, userId, s3Key, status = 'DONE') {
     const now = new Date().toISOString();
-    const stmt = db.prepare('UPDATE tasks SET result_data = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?');
-    stmt.run(resultData, status, now, id, userId);
+    const stmt = db.prepare('UPDATE tasks SET s3_key = ?, status = ?, updated_at = ? WHERE id = ? AND user_id = ?');
+    stmt.run(s3Key, status, now, id, userId);
 }
 
 //UPDATE(TEXT)
 function updateTaskText(id, userId, newText) {
     const now = new Date().toISOString();
     const stmt = db.prepare(`
-        UPDATE tasks SET input_text = ?, status = ?, result_data = ?, updated_at = ? 
+        UPDATE tasks SET input_text = ?, status = ?, s3_key = ?, updated_at = ? 
         WHERE id = ? AND user_id = ?
     `);
     stmt.run(newText, 'QUEUED', null, now, id, userId);
