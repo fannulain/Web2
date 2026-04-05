@@ -2,13 +2,15 @@ const amqp = require('amqplib');
 const { updateTaskStatus, saveTaskResult } = require('../models/db');
 
 let channel = null;
+let rabbitConnection = null;
 const QUEUE_NAME = 'transcription.request';
 const EVENTS_QUEUE = 'transcription.events';
 
 async function connectRabbitMQ() {
     try {
-        const connection = await amqp.connect('amqp://localhost');
-        channel = await connection.createChannel();
+        const url = process.env.RABBITMQ_URL || 'amqp://localhost';
+        rabbitConnection = await amqp.connect(url);
+        channel = await rabbitConnection.createChannel();
         await channel.assertQueue(QUEUE_NAME, { durable: true });
         await channel.assertQueue(EVENTS_QUEUE, { durable: true });
         console.log('RabbitMQ connected and queues ensured');
@@ -69,8 +71,18 @@ async function consumeEvents() {
     }, { noAck: false });
 }
 
+async function closeRabbitMQ() {
+    if (channel) {
+        try { await channel.close(); } catch (e) { }
+    }
+    if (rabbitConnection) {
+        try { await rabbitConnection.close(); } catch (e) { }
+    }
+}
+
 module.exports = {
     connectRabbitMQ,
     publishTask,
-    consumeEvents
+    consumeEvents,
+    closeRabbitMQ
 };
