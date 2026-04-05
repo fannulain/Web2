@@ -94,7 +94,7 @@ def callback(ch, method, properties, body):
         publish_event(ch, task_id, user_id, 'PROCESSING', 90)
         noun_phrases = list(set(blob.noun_phrases))[:15]
         time.sleep(1)
-        result = {
+        result_content = {
             "analysis_type": "NLP & Sentiment Pipeline",
             "metrics": {
                 "word_count": word_count,

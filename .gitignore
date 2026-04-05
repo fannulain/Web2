@@ -2,3 +2,4 @@ tasks.db
 node_modules/
 python-worker/venv/
 .env
+coverage/
