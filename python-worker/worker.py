@@ -3,10 +3,29 @@ import json
 import time
 from textblob import TextBlob
 import sys
-
+import io
+from minio import Minio
 RABBITMQ_HOST = 'localhost'
 QUEUE_REQUEST = 'transcription.request'
 QUEUE_EVENTS = 'transcription.events'
+MINIO_ENDPOINT = 'localhost:9000'
+MINIO_ACCESS_KEY = 'minioadmin'
+MINIO_SECRET_KEY = 'minioadmin'
+BUCKET_NAME = 'tasks-results'
+
+#MinIO
+minio_client = Minio(
+    MINIO_ENDPOINT,
+    access_key=MINIO_ACCESS_KEY,
+    secret_key=MINIO_SECRET_KEY,
+    secure=False
+)
+
+try:
+    if not minio_client.bucket_exists(BUCKET_NAME):
+        minio_client.make_bucket(BUCKET_NAME)
+except Exception as e:
+    print(f"Warning: MinIO bucket check failed: {e}")
 
 def publish_event(channel, task_id, user_id, status, progress, result=None):
     event_data = {
@@ -75,7 +94,6 @@ def callback(ch, method, properties, body):
         publish_event(ch, task_id, user_id, 'PROCESSING', 90)
         noun_phrases = list(set(blob.noun_phrases))[:15]
         time.sleep(1)
-        
         result = {
             "analysis_type": "NLP & Sentiment Pipeline",
             "metrics": {
@@ -89,6 +107,27 @@ def callback(ch, method, properties, body):
             "keywords": noun_phrases
         }
         
+        try:
+            json_data = json.dumps(result_content).encode('utf-8')
+            json_bytes = io.BytesIO(json_data)
+
+            s3_key = f"task-{task_id}-result.json"
+            minio_client.put_object(
+                BUCKET_NAME,
+                s3_key,
+                json_bytes,
+                len(json_data),
+                content_type='application/json'
+            )
+            print(f"Uploaded result to MinIO with key {s3_key}")
+            result = {"s3Key": s3_key}
+        except Exception as e:
+            print(f"Failed to upload to MinIO: {e}")
+            result = {"error": f"MinIO S3 upload failed: {e}"}
+            publish_event(ch, task_id, user_id, 'ERROR', 0, result)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+            
         #100%
         publish_event(ch, task_id, user_id, 'DONE', 100, result)
         print(f"Task {task_id} successfully completed.")
