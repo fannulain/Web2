@@ -1,5 +1,6 @@
 const amqp = require('amqplib');
 const { updateTaskStatus, saveTaskResult } = require('../models/db');
+const websocketService = require('./websocketService');
 
 let channel = null;
 const QUEUE_NAME = 'transcription.request';
@@ -49,6 +50,12 @@ async function consumeEvents() {
                 const { taskId, userId, status, progress, result } = eventData;
 
                 console.log(`[Event] Received update for Task ${taskId}: ${status}`);
+                websocketService.notifyUser(userId, {
+                    type: 'TASK_EVENT',
+                    taskId: taskId,
+                    status: status,
+                    progress: progress || 0
+                });
 
                 if (status === 'PROCESSING') {
                     const progressData = JSON.stringify({ progress: progress || 'Started background processing' });

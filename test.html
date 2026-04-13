@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script>
+    const token = "Token here";
+    const socket = io("ws://localhost:3000", { auth: { token } });
+    socket.on("connect", () => console.log("Connected"));
+    socket.on("task_update", (data) => console.log("Update:", data));
+</script>
+<h2>F12 (Console) for events</h2>
