@@ -1,6 +1,7 @@
-const Database = require('better-sqlite3')
-const { v4: uuidv4 } = require('uuid');
-const db = new Database('tasks.db')
+const Database = require('better-sqlite3');
+const { randomUUID } = require('crypto');
+const dbPath = process.env.NODE_ENV === 'test' ? ':memory:' : 'tasks.db';
+const db = new Database(dbPath);
 
 db.exec(`
     CREATE TABLE IF NOT EXISTS tasks (
@@ -16,7 +17,7 @@ db.exec(`
 
 //CREATE
 function createTask(inputText, userId) {
-    const id = uuidv4();
+    const id = randomUUID();
     const now = new Date().toISOString();
     const stmt = db.prepare(`
         INSERT INTO tasks (id, user_id, status, input_text, s3_key, created_at, updated_at) 

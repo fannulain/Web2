@@ -2,13 +2,14 @@ const amqp = require('amqplib');
 const { updateTaskStatus, saveTaskResult } = require('../models/db');
 const websocketService = require('./websocketService');
 
+let connection = null;
 let channel = null;
 const QUEUE_NAME = 'transcription.request';
 const EVENTS_QUEUE = 'transcription.events';
 
 async function connectRabbitMQ() {
     try {
-        const connection = await amqp.connect('amqp://localhost');
+        connection = await amqp.connect(process.env.RABBITMQ_URL || 'amqp://localhost');
         channel = await connection.createChannel();
         await channel.assertQueue(QUEUE_NAME, { durable: true });
         await channel.assertQueue(EVENTS_QUEUE, { durable: true });
@@ -76,8 +77,20 @@ async function consumeEvents() {
     }, { noAck: false });
 }
 
+async function closeRabbitMQ() {
+    if (channel) {
+        await channel.close();
+        channel = null;
+    }
+    if (connection) {
+        await connection.close();
+        connection = null;
+    }
+}
+
 module.exports = {
     connectRabbitMQ,
     publishTask,
-    consumeEvents
+    consumeEvents,
+    closeRabbitMQ
 };

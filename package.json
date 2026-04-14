@@ -7,7 +7,10 @@
     "start": "node server.js",
     "worker": "node worker.js",
     "test": "jest",
-    "test:coverage": "jest --coverage --collectCoverageFrom=\"src/**/*.js\"",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:contract": "jest tests/contract",
+    "test:coverage": "jest --coverage",
     "start:all": "powershell -ExecutionPolicy Bypass -File .\\start.ps1"
   },
   "repository": {
@@ -33,7 +36,10 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@testcontainers/minio": "^11.14.0",
+    "@testcontainers/rabbitmq": "^11.14.0",
     "jest": "^30.3.0",
+    "sqlite3": "^6.0.1",
     "supertest": "^7.2.2",
     "testcontainers": "^11.13.0"
   }
