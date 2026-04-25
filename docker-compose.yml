@@ -9,6 +9,8 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
   minio:
     image: minio/minio:latest
@@ -19,3 +21,9 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  rabbitmq_data:
+  minio_data:
