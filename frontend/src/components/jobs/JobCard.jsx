@@ -31,13 +31,22 @@ export default function JobCard({ job, onView, onDelete }) {
     <div
       className={`card-enter animate-fade-in-up glass rounded-2xl p-5 transition-all duration-300
                    hover:border-white/10 hover:shadow-lg hover:shadow-brand-500/5
-                   group relative overflow-hidden
+                   group relative overflow-hidden flex flex-col h-full
                    ${isProcessing ? 'border-blue-500/20' : ''}
                    ${isError ? 'border-red-500/20' : ''}`}
     >
-      {/* Processing shimmer bar */}
+      {/* Processing shimmer bar or Progress bar */}
       {isProcessing && (
-        <div className="absolute top-0 left-0 right-0 h-0.5 animate-shimmer rounded-full" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-surface-800">
+          {job.result?.progress ? (
+             <div 
+               className="h-full bg-brand-500 transition-all duration-300 ease-out" 
+               style={{ width: `${job.result.progress}%` }}
+             />
+          ) : (
+             <div className="h-full w-full animate-shimmer rounded-full" />
+          )}
+        </div>
       )}
 
       {/* Top row: status + date */}
@@ -49,7 +58,7 @@ export default function JobCard({ job, onView, onDelete }) {
       </div>
 
       {/* Text preview */}
-      <div className="mb-4">
+      <div className="mb-4 flex-1">
         <p className={`text-sm text-surface-200/70 leading-relaxed min-h-[2.5rem] ${expanded ? 'whitespace-pre-wrap break-words' : ''
           }`}>
           {displayText}

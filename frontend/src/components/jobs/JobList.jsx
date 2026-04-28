@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import JobCard from './JobCard';
 import { getTasks, deleteTask as apiDeleteTask } from '../../services/api';
 import toast from 'react-hot-toast';
+import useWebSocket from '../../hooks/useWebSocket';
 
 // Skeleton card
 function SkeletonCard() {
@@ -58,6 +59,38 @@ export default function JobList({ onViewJob, refreshTrigger }) {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs, refreshTrigger]);
+
+  const handleWsMessage = useCallback((data) => {
+    if (data.type === 'TASK_EVENT' || data.type === 'TASK_UPDATE') {
+      setJobs((prev) =>
+        prev.map((j) => {
+          if (j.id === data.taskId) {
+            return {
+              ...j,
+              status: data.status,
+              result: data.status === 'PROCESSING' || data.progress
+                ? { ...j.result, progress: data.progress }
+                : j.result
+            };
+          }
+          return j;
+        })
+      );
+      if (data.status === 'DONE' || data.status === 'ERROR') {
+        setTimeout(() => fetchJobs(), 500);
+      }
+    }
+  }, [fetchJobs]);
+
+  const { isConnected: isWsConnected } = useWebSocket(handleWsMessage);
+  useEffect(() => {
+    if (!isWsConnected) {
+      const interval = setInterval(() => {
+        fetchJobs();
+      }, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isWsConnected, fetchJobs]);
 
   const handleDelete = async (id) => {
     try {
