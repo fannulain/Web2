@@ -1,9 +1,17 @@
 import { useNavigate } from 'react-router-dom';
 import { logout, getUsername } from '../../services/api';
+import { useState, useEffect } from 'react';
 
 export default function Header() {
   const navigate = useNavigate();
   const username = getUsername();
+  const [isWsConnected, setIsWsConnected] = useState(false);
+
+  useEffect(() => {
+    const handleStatus = (e) => setIsWsConnected(e.detail);
+    window.addEventListener('ws-status', handleStatus);
+    return () => window.removeEventListener('ws-status', handleStatus);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -32,10 +40,10 @@ export default function Header() {
 
         {/* Right side: user + connection + logout */}
         <div className="flex items-center gap-4">
-          {/* Connection status placeholder */}
+          {/* Connection status */}
           <div id="ws-connection-status" className="hidden sm:flex items-center gap-1.5 text-xs text-surface-200/40">
-            <span className="w-2 h-2 rounded-full bg-surface-200/20"></span>
-            <span>Offline</span>
+            <span className={`w-2 h-2 rounded-full ${isWsConnected ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]' : 'bg-surface-200/20'}`}></span>
+            <span className={isWsConnected ? 'text-emerald-400' : ''}>{isWsConnected ? 'Online' : 'Offline'}</span>
           </div>
 
           {/* User info */}
