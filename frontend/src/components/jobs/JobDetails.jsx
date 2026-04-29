@@ -28,7 +28,7 @@ function SentimentBar({ value, label }) {
         <span className="text-xs text-surface-200/50">{label}</span>
         <span className={`text-xs font-semibold ${isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-surface-200/60'
           }`}>
-          {value}
+          {Number(value).toFixed(2)}
         </span>
       </div>
       <div className="w-full h-1.5 rounded-full bg-surface-900/80 overflow-hidden">
@@ -213,7 +213,7 @@ export default function JobDetails({ job, onClose, onRerun }) {
                     <SentimentBar value={result.sentiment.polarity} label="Polarity" />
                     <SentimentBar
                       value={result.sentiment.subjectivity * 2 - 1}
-                      label={`Subjectivity (${result.sentiment.subjectivity})`}
+                      label={`Subjectivity (${Number(result.sentiment.subjectivity).toFixed(2)})`}
                     />
                   </div>
                 </div>
