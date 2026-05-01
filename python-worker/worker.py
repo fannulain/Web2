@@ -64,7 +64,6 @@ def callback(ch, method, properties, body):
         
         #0%
         publish_event(ch, task_id, user_id, 'PROCESSING', 0)
-        time.sleep(1)
 
         if not text or not text.strip():
             print(f"Found Task {task_id} with empty text.")
@@ -81,19 +80,16 @@ def callback(ch, method, properties, body):
         publish_event(ch, task_id, user_id, 'PROCESSING', 30)
         word_count = len(blob.words)
         sentences_count = len(blob.sentences)
-        time.sleep(2)
         
         #60%
         publish_event(ch, task_id, user_id, 'PROCESSING', 60)
         sentiment = blob.sentiment
         polarity = round(sentiment.polarity, 2)
         subjectivity = round(sentiment.subjectivity, 2)
-        time.sleep(2)
         
         #90%
         publish_event(ch, task_id, user_id, 'PROCESSING', 90)
         noun_phrases = list(set(blob.noun_phrases))[:15]
-        time.sleep(1)
         result_content = {
             "analysis_type": "NLP & Sentiment Pipeline",
             "metrics": {
