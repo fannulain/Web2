@@ -3,3 +3,5 @@ node_modules/
 python-worker/venv/
 .env
 coverage/
+
+__pycache__/

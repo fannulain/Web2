@@ -3,6 +3,15 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start:all": "powershell -ExecutionPolicy Bypass -File .\\start.ps1"
+    "start:all": "powershell -ExecutionPolicy Bypass -File .\\start.ps1",
+    "test:e2e": "cd frontend && npx playwright test",
+    "test:e2e:ui": "cd frontend && npx playwright test --ui",
+    "test:e2e:debug": "cd frontend && npx playwright test --ui --debug",
+    "test:e2e:report": "cd frontend && npx playwright show-report",
+    "test:ai": "cd ai-testing && .\\venv\\Scripts\\python end_to_end_runner.py",
+    "test:ai:login": "cd ai-testing && .\\venv\\Scripts\\python end_to_end_runner.py --test login",
+    "test:ai:job": "cd ai-testing && .\\venv\\Scripts\\python end_to_end_runner.py --test job_creation",
+    "test:ai:validation": "cd ai-testing && .\\venv\\Scripts\\python end_to_end_runner.py --test validation",
+    "test:ai:negative": "cd ai-testing && .\\venv\\Scripts\\python end_to_end_runner.py --test negative"
   }
 }
