@@ -6,6 +6,7 @@ export class LoginPage {
     this.page = page;
     this.usernameInput = page.locator('#login-username');
     this.submitButton = page.locator('#login-submit-btn');
+    this.errorMessage = page.locator('#login-error-message');
   }
 
   async navigate() {

@@ -89,11 +89,11 @@ export default function LoginPage() {
                            focus:outline-none focus:ring-2 focus:ring-brand-500/40 focus:border-brand-500/50
                            transition-all duration-200 disabled:opacity-50
                            ${errors.username
-                             ? 'border-red-500/50 focus:ring-red-500/30'
-                             : 'border-white/8 hover:border-white/15'}`}
+                    ? 'border-red-500/50 focus:ring-red-500/30'
+                    : 'border-white/8 hover:border-white/15'}`}
               />
               {errors.username && (
-                <p className="text-xs text-red-400 mt-1.5 pl-1">{errors.username.message}</p>
+                <p id="login-error-message" className="text-xs text-red-400 mt-1.5 pl-1">{errors.username.message}</p>
               )}
             </div>
 
